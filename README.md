@@ -83,7 +83,7 @@ Perform EDA to understand the data distribution and relationships between featur
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-sns.pairplot(df, hue='quality')
+sns.pairplot(dataset, hue='type', diag_kind='kde')
 plt.show()
 ```
 
@@ -109,48 +109,44 @@ plt.show()
 - **ROC Curves**: Plot ROC curves for LightGBM and Random Forest to evaluate model performance.
 
 ```python
+!pip install scikit-learn==1.0.2 # Install a compatible scikit-learn version
+
+import matplotlib.pyplot as plt
 from sklearn.metrics import roc_curve, auc
 
-# For LightGBM
-import lightgbm as lgb
+# Calculate ROC curve and AUC
+fpr, tpr, thresholds = roc_curve(y_test, lgbm.predict_proba(X_test)[:, 1])
+roc_auc = auc(fpr, tpr)
 
-# Initialize and train the model
-lgb_model = lgb.LGBMClassifier()
-lgb_model.fit(X_train, y_train)
-
-# Predict probabilities
-y_pred_proba_lgb = lgb_model.predict_proba(X_test)[:, 1]
-
-# ROC curve
-fpr_lgb, tpr_lgb, _ = roc_curve(y_test, y_pred_proba_lgb)
-roc_auc_lgb = auc(fpr_lgb, tpr_lgb)
-
+# Plot ROC curve
 plt.figure()
-plt.plot(fpr_lgb, tpr_lgb, color='blue', lw=2, label='LGBM ROC curve (area = %0.2f)' % roc_auc_lgb)
-
-# For Random Forest
-from sklearn.ensemble import RandomForestClassifier
-
-# Initialize and train the model
-rf_model = RandomForestClassifier()
-rf_model.fit(X_train, y_train)
-
-# Predict probabilities
-y_pred_proba_rf = rf_model.predict_proba(X_test)[:, 1]
-
-# ROC curve
-fpr_rf, tpr_rf, _ = roc_curve(y_test, y_pred_proba_rf)
-roc_auc_rf = auc(fpr_rf, tpr_rf)
-
-plt.plot(fpr_rf, tpr_rf, color='green', lw=2, label='RF ROC curve (area = %0.2f)' % roc_auc_rf)
+plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (area = %0.2f)' % roc_auc)
 plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
 plt.xlim([0.0, 1.0])
 plt.ylim([0.0, 1.05])
 plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
-plt.title('Receiver Operating Characteristic')
+plt.title('Receiver Operating Characteristic for LightGBM')
 plt.legend(loc="lower right")
 plt.show()
+
+#roc curve of RF
+# Calculate ROC curve and AUC for Random Forest
+fpr_rf, tpr_rf, thresholds_rf = roc_curve(y_test, rf.predict_proba(X_test)[:, 1])
+roc_auc_rf = auc(fpr_rf, tpr_rf)
+
+# Plot ROC curve for Random Forest
+plt.figure()
+plt.plot(fpr_rf, tpr_rf, color='darkorange', lw=2, label='ROC curve (area = %0.2f)' % roc_auc_rf)
+plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver Operating Characteristic for Random Forest')
+plt.legend(loc="lower right")
+plt.show()
+
 ```
 
 ### Feature Importance
@@ -158,27 +154,31 @@ plt.show()
 - **Feature Importance Graph**: Plot feature importance to identify the most significant features influencing the predictions.
 
 ```python
-# Feature importance for Random Forest
-importances_rf = rf_model.feature_importances_
-indices_rf = np.argsort(importances_rf)[::-1]
+# Visualize feature importances from Random Forest
+importances = rf.feature_importances_
+features = X.columns
+indices = np.argsort(importances)
 
-plt.figure()
-plt.title("Feature importances (Random Forest)")
-plt.bar(range(X_train.shape[1]), importances_rf[indices_rf], align="center")
-plt.xticks(range(X_train.shape[1]), df.columns[indices_rf], rotation=90)
-plt.xlim([-1, X_train.shape[1]])
+plt.figure(figsize=(10, 6))
+plt.title('Feature Importances (Random Forest)')
+plt.barh(range(len(indices)), importances[indices], color='b', align='center')
+plt.yticks(range(len(indices)), [features[i] for i in indices])
+plt.xlabel('Relative Importance')
 plt.show()
 
-# Feature importance for LightGBM
-importances_lgb = lgb_model.feature_importances_
-indices_lgb = np.argsort(importances_lgb)[::-1]
 
-plt.figure()
-plt.title("Feature importances (LightGBM)")
-plt.bar(range(X_train.shape[1]), importances_lgb[indices_lgb], align="center")
-plt.xticks(range(X_train.shape[1]), df.columns[indices_lgb], rotation=90)
-plt.xlim([-1, X_train.shape[1]])
+# Visualize feature importances from LGBM
+importances = lgbm.feature_importances_
+features = X.columns
+indices = np.argsort(importances)
+
+plt.figure(figsize=(10, 6))
+plt.title('Feature Importances (Random Forest)')
+plt.barh(range(len(indices)), importances[indices], color='b', align='center')
+plt.yticks(range(len(indices)), [features[i] for i in indices])
+plt.xlabel('Relative Importance')
 plt.show()
+
 ```
 
 ## Results
